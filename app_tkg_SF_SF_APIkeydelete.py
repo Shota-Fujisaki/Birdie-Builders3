@@ -3,11 +3,17 @@ from datetime import date, timedelta
 import requests
 import pandas as pd
 from openai import OpenAI
+from dotenv import load_dotenv # type: ignore
+import os
 
+load_dotenv()  # .envファイルを読み込む
 # 定数
-REQUEST_URL_TRAVEL = "https://app.rakuten.co.jp/services/api/Travel/VacantHotelSearch/20170426"
-REQUEST_URL_GORA = "https://app.rakuten.co.jp/services/api/Gora/GoraGolfCourseSearch/20170623"
-APP_ID = "1025058846561900196"
+REQUEST_URL_TRAVEL = os.getenv("REQUEST_URL_TRAVEL")
+REQUEST_URL_GORA = os.getenv("REQUEST_URL_GORA")
+APP_ID = os.getenv("APP_ID")
+
+# OpenAIクライアントのインスタンスを作成
+client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # 今日と明日の日付を取得
 today = date.today()
@@ -606,14 +612,6 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# OpenAIクライアントのインスタンスを作成
-# OpenAIクライアントのインスタンスを作成
-from dotenv import load_dotenv # type: ignore
-import os
-
-load_dotenv()  # .envファイルを読み込む
-client = OpenAI(api_key=os.getenv('OPENAI_API_KEY'))
 
 # システムメッセージで指示を設定
 instructions = """
