@@ -46,13 +46,11 @@ st.sidebar.markdown(
 )
 
 # サイドバーにタイトルと説明文を表示
-st.sidebar.markdown(
-    """
-    <p class="sidebar-title">⛳️ Golf Concierge</p>
-    <p class="sidebar-description">『ゴルフ×∞』最高のプランをご提案します</p>
-    """, 
-    unsafe_allow_html=True
-)
+# 画像のパスまたはURLを指定
+image_path = "ロゴ.svg"  # ここに画像のパスまたはURLを指定
+
+# サイドバーに画像を表示
+st.sidebar.image(image_path, caption="最高のゴルフ旅をご提案します", use_column_width=True)
 
 # メインコンテンツにも装飾を加える
 # 下記コードを<div style="text-align: center;">の後ろに追加すると画像が入る
@@ -609,12 +607,42 @@ def display_selected_plan():
     if st.session_state["selected_plan"]:
         selected_plan = st.session_state["selected_plan"]
         st.title("選択されたプラン")
-        st.write(f"**ホテル名:** {selected_plan['hotel_name']}")
-        st.write(f"**最安料金:** {selected_plan['hotel_price']}円")
-        st.write(f"**レビュー平均:** {selected_plan['hotel_review_average']}")
-        st.write(f"**レビュー数:** {selected_plan['hotel_review_count']}")
-        st.write(f"**ゴルフ場名:** {selected_plan['golf_course_name']}")
-        st.write(f"**ゴルフ場評価:** {selected_plan['golf_course_evaluation']}")
+        col1, col2 = st.columns([6, 4])
+        with col1:
+            st.subheader(f"""ホテル名: 
+                         {selected_plan['hotel_name']}""")
+            st.subheader(f"""ゴルフ場名: 
+                         {selected_plan['golf_course_name']}""")
+        with col2:
+            st.markdown(f"""
+                        <style>
+                            .custom-image {{
+                                height: 50px;  /* 画像の高さを指定 */
+                                width: 150px;   /* 幅を自動的に調整 */
+                                object-fit: cover;
+                                float: right;
+                                margin-left: auto;
+                                margin-right: auto;
+                                display: block;
+                            }}
+                        </style>
+                        <img src="{selected_plan['hotel_image_url']}" class="custom-image">
+                    """, unsafe_allow_html=True)
+            st.markdown(f"""
+                        <style>
+                            .custom-image {{
+                                height: 50px;  /* 画像の高さを指定 */
+                                width: 150px;   /* 幅を自動的に調整 */
+                                object-fit: cover;
+                                float: right;
+                                margin-left: auto;
+                                margin-right: auto;
+                                display: block;
+                            }}
+                        </style>
+                        <img src="{selected_plan['golf_image_url']}" class="custom-image">
+                    """, unsafe_allow_html=True)
+        
     else:
         st.write("選択されたプランはありません。")
 
@@ -628,11 +656,11 @@ def on_plan_select(hotel, top_golf, idx):
         "hotel_review_count": hotel.get("reviewCount", "N/A"),
         "golf_course_name": top_golf["golfCourseName"] if top_golf is not None else "なし",
         "golf_course_evaluation": top_golf["evaluation"] if top_golf is not None else  "なし",
+        "hotel_image_url":hotel["hotelImageUrl"],
+        "golf_image_url":top_golf['golfCourseImageUrl']
     }
 
-    # セッションに保存されたプランを表示
-    st.write("選択されたプラン:")
-    st.write(st.session_state["selected_plan"])
+ 
 
 # 検索ボタンを押した後の処理
 def search_and_display_hotels():
@@ -648,25 +676,167 @@ def search_and_display_hotels():
         # 3つのホテルに関して、選択ボタンを作成
         for idx, hotel in enumerate([min_charge_hotel, max_review_hotel, max_review_count_hotel], start=1):
             golf_df = search_golf_courses(hotel["latitude"], hotel["longitude"])
-            
+            col1, col2 = st.columns([6, 4])
             # golf_df が空でないかを確認
             if not golf_df.empty:  # 空でない場合、top_golfを取得
                 top_golf = golf_df.iloc[0]
-                st.subheader(f"ホテル {idx}: {hotel['hotelName']}")
-                st.write(f"**最安料金:** {hotel['hotelMinCharge']}円")
-                st.write(f"**レビュー平均:** {hotel.get('reviewAverage', 'N/A')}")
-                st.write(f"**レビュー数:** {hotel.get('reviewCount', 'N/A')}")
-                st.write(f"**周辺のゴルフ場:** {top_golf['golfCourseName']} (評価: {top_golf['evaluation']})")
-            else:
-                st.subheader(f"ホテル {idx}: {hotel['hotelName']}")
-                st.write(f"**最安料金:** {hotel['hotelMinCharge']}円")
-                st.write(f"**レビュー平均:** {hotel.get('reviewAverage', 'N/A')}")
-                st.write(f"**レビュー数:** {hotel.get('reviewCount', 'N/A')}")
-                st.write("周辺のゴルフ場が見つかりませんでした。")
+                # 各ホテルに対して「このプランを選択」ボタンを表示
+                button_id = f"select_plan_{idx}"
+                st.button(f"このプランを選択", key=button_id, on_click=on_plan_select, args=(hotel, top_golf if not golf_df.empty else None, idx))
+                # 左カラムにテキストを表示
+                col1, col2, col3, col4 = st.columns(4)
 
-            # 各ホテルに対して「このプランを選択」ボタンを表示
-            button_id = f"select_plan_{idx}"
-            st.button(f"このプランを選択 (ホテル {idx})", key=button_id, on_click=on_plan_select, args=(hotel, top_golf if not golf_df.empty else None, idx))
+                # ホテル情報を左上のカラムに表示 (col1)
+                with col1:
+                    st.markdown(f"""
+                        <style>
+                            .custom-link {{
+                                font-size: 18px;  /* テキストサイズ */
+                                font-weight: bold; /* 太字 */
+                                color: blue; /* テキスト色 */
+                            }}
+                        </style>
+                        <a href="{hotel['hotelInformationUrl']}" target="_blank" class="custom-link">{hotel['hotelName']}</a>
+                    """, unsafe_allow_html=True)
+                    st.write(f"最安料金: {hotel['hotelMinCharge']}円")
+                    st.write(f"レビュー平均: {hotel.get('reviewAverage', 'N/A')}")
+
+                # ホテル画像を右上のカラムに表示 (col2)
+                with col2:
+                    st.markdown(f"""
+                        <style>
+                            .custom-image {{
+                                height: 1500px;  /* 画像の高さを指定 */
+                                width: 300px;   /* 幅を自動的に調整 */
+                                object-fit: cover;
+                                float: right;
+                                margin-left: auto;
+                                margin-right: auto;
+                                display: block;
+                            }}
+                        </style>
+                        <img src="{hotel['hotelImageUrl']}" class="custom-image">
+                    """, unsafe_allow_html=True)
+
+                # ゴルフ場情報を左下のカラムに表示 (col3)
+                with col3:
+                    st.markdown(f"""
+                        <style>
+                            .custom-link {{
+                                font-size: 18px;  /* テキストサイズ */
+                                font-weight: bold; /* 太字 */
+                                color: blue; /* テキスト色 */
+                            }}
+                        </style>
+                        <a href="{top_golf['golfCourseDetailUrl']}" target="_blank" class="custom-link">{top_golf['golfCourseName']}</a>
+                    """, unsafe_allow_html=True)
+                    st.write(f"評価: {top_golf['evaluation']}")
+                    
+                    st.markdown(f"""
+                        <style>
+                            .custom-link_calendar {{
+                                font-size: 16px;  /* テキストサイズ */
+                                color: blue; /* テキスト色 */
+                            }}
+                        </style>
+                        <a href="{top_golf['reserveCalUrl']}" target="_blank" class="custom-link_calendar">予約カレンダー</a>
+                    """, unsafe_allow_html=True)
+
+                # ゴルフ場画像を右下のカラムに表示 (col4)
+                with col4:
+                    st.markdown(f"""
+                        <style>
+                            .custom-image {{
+                                height: 150px;  /* 画像の高さを指定 */
+                                width: 300px;   /* 幅を自動的に調整 */
+                                object-fit: cover;
+                                float: right;
+                                margin-left: auto;
+                                margin-right: auto;
+                                display: block;
+                            }}
+                        </style>
+                        <img src="{top_golf['golfCourseImageUrl']}" class="custom-image">
+                    """, unsafe_allow_html=True)
+            else:
+                button_id = f"select_plan_{idx}"
+                st.button(f"このプランを選択", key=button_id, on_click=on_plan_select, args=(hotel, top_golf if not golf_df.empty else None, idx))
+                # 左カラムにテキストを表示
+                col1, col2, col3, col4 = st.columns(4)
+
+                # ホテル情報を左上のカラムに表示 (col1)
+                with col1:
+                    st.markdown(f"""
+                        <style>
+                            .custom-link {{
+                                font-size: 18px;  /* テキストサイズ */
+                                font-weight: bold; /* 太字 */
+                                color: blue; /* テキスト色 */
+                            }}
+                        </style>
+                        <a href="{hotel['hotelInformationUrl']}" target="_blank" class="custom-link">{hotel['hotelName']}</a>
+                    """, unsafe_allow_html=True)
+                    st.write(f"最安料金: {hotel['hotelMinCharge']}円")
+                    st.write(f"レビュー平均: {hotel.get('reviewAverage', 'N/A')}")
+
+                # ホテル画像を右上のカラムに表示 (col2)
+                with col2:
+                    st.markdown(f"""
+                        <style>
+                            .custom-image {{
+                                height: 1500px;  /* 画像の高さを指定 */
+                                width: 300px;   /* 幅を自動的に調整 */
+                                object-fit: cover;
+                                float: right;
+                                margin-left: auto;
+                                margin-right: auto;
+                                display: block;
+                            }}
+                        </style>
+                        <img src="{hotel['hotelImageUrl']}" class="custom-image">
+                    """, unsafe_allow_html=True)
+
+                # ゴルフ場情報を左下のカラムに表示 (col3)
+                with col3:
+                    st.markdown(f"""
+                        <style>
+                            .custom-link {{
+                                font-size: 18px;  /* テキストサイズ */
+                                font-weight: bold; /* 太字 */
+                                color: blue; /* テキスト色 */
+                            }}
+                        </style>
+                        <a href="{top_golf['golfCourseDetailUrl']}" target="_blank" class="custom-link">{top_golf['golfCourseName']}</a>
+                    """, unsafe_allow_html=True)
+                    st.write(f"評価: {top_golf['evaluation']}")
+                    
+                    st.markdown(f"""
+                        <style>
+                            .custom-link_calendar {{
+                                font-size: 16px;  /* テキストサイズ */
+                                color: blue; /* テキスト色 */
+                            }}
+                        </style>
+                        <a href="{top_golf['reserveCalUrl']}" target="_blank" class="custom-link_calendar">予約カレンダー</a>
+                    """, unsafe_allow_html=True)
+
+                # ゴルフ場画像を右下のカラムに表示 (col4)
+                with col4:
+                    st.markdown(f"""
+                        <style>
+                            .custom-image {{
+                                height: 150px;  /* 画像の高さを指定 */
+                                width: 300px;   /* 幅を自動的に調整 */
+                                object-fit: cover;
+                                float: right;
+                                margin-left: auto;
+                                margin-right: auto;
+                                display: block;
+                            }}
+                        </style>
+                        <img src="{top_golf['golfCourseImageUrl']}" class="custom-image">
+                    """, unsafe_allow_html=True)
+
 
 # メイン処理
 def main():
